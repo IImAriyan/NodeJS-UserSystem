@@ -1,19 +1,25 @@
 
 import express from 'express';
 import bodyParser from 'body-parser';
-
+import mysql from "mysql";
+const db = mysql.createConnection({
+  host: "localhost",
+  user: "root",
+  password: "",
+  database: "usersDB",
+})
 class user {
   userID;
-  userName;
-  userPassword;
-  constructor(userID = 0,userName = "",userPassword = "") {
+  Username;
+  Password;
+  constructor(userID = 0,Username = "",Password = "") {
       this.userID = userID
-      this.userName = userName 
-      this.userPassword = userPassword
+      this.Username = Username
+      this.Password = Password
   }
 }
 
-const usersList = [];
+var usersList = [];
 
 // New app using express module
 const app = express((req,res)=>{
@@ -32,31 +38,38 @@ app.use(
 
 
 app.get('/api/users-list', (req, res) => {
-  // Get complete list of users
+  const SQL = "SELECT * FROM users"
+  db.query(SQL, (err, result) => {
+    if (err) {res.send(err)}
 
-  // Send the usersList as a response to the client
-  res.send(usersList);
+    usersList = result;
+    res.send(usersList);
+  })
 });
 
 
 app.post('/api/users-add',(req,res) =>{
-  if (req.body.userName == null) {
+  if (req.body.Username == null) {
 
     res.statusCode = 400;
     const responseMessage = "Username Is Invalid!"
     res.send(`{ Status":"400","message": "${responseMessage}}"`)
 
   }else {
-    if (req.body.userPassword == null) {
+    if (req.body.Password == null) {
       res.statusCode = 400;
       const responseMessage = "Password Is Invalid!"
       res.send(`{ Status":"400","message": "${responseMessage}}"`)
     }else {
 
 
-        let newUser = new user(usersList.length+1,req.body.userName,req.body.userPassword);
 
-        usersList.push(newUser);
+        const SQL = `INSERT INTO users (Username, Password) VALUES (? , ?)`
+        db.query(SQL,[req.body.Username,req.body.Password], (err, result) => {
+          if (err) {console.log( err)}
+          console.log("New User Added with id = "
+              + result.insertId + " Username : "+req.body.Username + " Password: "+req.body.Password) ;
+        })
 
         res.statusCode = 200;
         const responseMessage = "User Succeessfully Added"
@@ -70,11 +83,18 @@ app.post('/api/users-add',(req,res) =>{
 
 
 
+function reloadUserslist() {
+  db.query("SELECT * FROM users", (err, result) => {
+    if (err) {console.log( err)}
+    usersList = result;
+  })
+}
 
 
 app.post('/api/users-remove/:id',(req,res) =>{
   let findedIndex = 0;
   let IDentered = req.params.id;
+
 
   for (let i = 0 ; i< usersList.length ; i++) {
     if (usersList[i].userID == IDentered) {
@@ -83,16 +103,19 @@ app.post('/api/users-remove/:id',(req,res) =>{
       res.send(`{ Status":"200","message": "${responseMessage}"}`)
 
       // Remove User
-      usersList.splice(i,1)
-
-      findedIndex = 1;
+      const SQL = "DELETE FROM `users` WHERE userID = "+parseInt(IDentered);
+      db.query(SQL, (err, result) => {
+        console.log("New User Removed with id = " + IDentered );
+        console.log(result);
+        findedIndex = 1;
+      })
     }
   }
-
   if (findedIndex == 0) {
      res.statusCode = 404;
     const responseMessage = "User Not Found"
-    res.send(`{ Status":"404","message": "${responseMessage}"}`)  
+    res.send(`{ Status":"404","message": "${responseMessage}"} list : ${usersList }`)
+
   }
 
 })
@@ -102,26 +125,37 @@ app.post('/api/users-update/:id',(req,res) =>{
   let findedIndex = 0;
   let IDentered = req.params.id;
 
+  // Reload Users lIst
+  reloadUserslist();
+
   for (let i = 0 ; i< usersList.length ; i++) {
     if (usersList[i].userID == IDentered) {
-
-
       // Update User
-      if (req.body.userName == null) {
+      if (req.body.Username == null) {
         res.statusCode = 400;
         const responseMessage = "User Username Is Invalid !!";
         res.send(`{ Status":"400","message": "${responseMessage}"}`)
       }else {
-        if (req.body.userPassword == null) {
+        if (req.body.Password == null) {
           res.statusCode = 400;
           const responseMessage = "User Password Is Invalid !!";
           res.send(`{ Status":"400","message": "${responseMessage}"}`)
         }else {
-          usersList[i].userName = req.body.userName;
-          usersList[i].userPassword = req.body.userPassword;
-          res.statusCode = 200;
-          const responseMessage = "User Succeessfully Updated";
-          res.send(`{ Status":"200","message": "${responseMessage}"}`)
+          // Updating User
+
+          usersList[i].userName = req.body.Username;
+          usersList[i].userPassword = req.body.Password;
+          const SQL = "UPDATE `users` SET `Username`= ? , `Password`= ? WHERE `userID` = ?"
+          findedIndex = 1;
+
+          db.query(SQL,[usersList[i].userName,usersList[i].userPassword,usersList[i].userID], (err, result) => {
+            if (err) {console.log( err)}
+            res.statusCode = 200;
+            const responseMessage = "User Succeessfully Updated";
+
+            res.send(`{ Status":"200","message": "${responseMessage}"}`)
+          })
+
         }
       }
 
@@ -135,12 +169,13 @@ app.post('/api/users-update/:id',(req,res) =>{
   }
 });
 
+
+
 const port = 7740;
 
 app.listen(port,function () {
     console.log(
         `server is running on port 127.0.0.1:${port}`
     );
-
 })
 
