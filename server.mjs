@@ -135,9 +135,12 @@ app.post('/api/users-update/:id',(req,res) =>{
   }
 });
 
-app.listen(3000,'127.0.0.1', function () {
+const port = 7740;
+
+app.listen(port,function () {
     console.log(
-        "server is running on port 3000"
+        `server is running on port 127.0.0.1:${port}`
     );
+
 })
 
