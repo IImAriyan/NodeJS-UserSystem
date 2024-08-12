@@ -2,12 +2,16 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import mysql from "mysql";
+import cors from "cors"
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
   password: "",
   database: "usersDB",
 })
+
+
+
 class user {
   userID;
   Username;
@@ -28,6 +32,8 @@ const app = express((req,res)=>{
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true}))
+app.use(cors())
+
 
 app.use(
     bodyParser.urlencoded({
@@ -175,7 +181,7 @@ const port = 7740;
 
 app.listen(port,function () {
     console.log(
-        `server is running on port 127.0.0.1:${port}`
+        `server is running on port localhost:${port}`
     );
 })
 
