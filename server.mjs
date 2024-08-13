@@ -3,6 +3,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import mysql from "mysql";
 import cors from "cors"
+import {v4, v4 as uuidv4, v6 as uuidv6} from 'uuid';
 const db = mysql.createConnection({
   host: "localhost",
   user: "root",
@@ -24,6 +25,24 @@ class user {
 }
 
 var usersList = [];
+
+function generateID(count) {
+  var founded = false,
+      _sym = 'abcdefghijklmnopqrstuvwxyz1234567890',
+      str = '';
+  while(!founded) {
+    for(var i = 0; i < count; i++) {
+      str += _sym[parseInt(Math.random() * (_sym.length))];
+    }
+    base.getID(string, function(err, res) {
+      if(!res.length) {
+        founded = true; // How to do it?
+      }
+    });
+  }
+  return str;
+}
+
 
 // New app using express module
 const app = express((req,res)=>{
@@ -70,8 +89,9 @@ app.post('/api/users-add',(req,res) =>{
 
 
 
-        const SQL = `INSERT INTO users (Username, Password) VALUES (? , ?)`
-        db.query(SQL,[req.body.Username,req.body.Password], (err, result) => {
+        const SQL = `INSERT INTO users (userID,Username, Password) VALUES (?, ? , ?)`
+        const newPassowrd =  v4()
+        db.query(SQL,[newPassowrd,req.body.Username,req.body.Password], (err, result) => {
           if (err) {console.log( err)}
           console.log("New User Added with id = "
               + result.insertId + " Username : "+req.body.Username + " Password: "+req.body.Password) ;
